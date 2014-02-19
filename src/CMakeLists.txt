@@ -16,8 +16,13 @@ set(CMAKE_CXX_FLAGS "-Wall -Wno-sign-compare -std=c++11 ${SDL_CFLAGS}")
 
 file(GLOB_RECURSE Sources easycomp/*.cpp)
 add_executable(easycomp ${Sources})
-
 target_link_libraries(easycomp 
     ${LIBS} 
 )
 
+
+file(GLOB_RECURSE Sources2 prototypes/expression_performance/*.cpp)
+add_executable(prototype_expression_performance ${Sources2})
+target_link_libraries(prototype_expression_performance
+    ${LIBS} 
+)
