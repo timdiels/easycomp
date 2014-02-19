@@ -23,11 +23,11 @@
 
 using namespace std;
 
-namespace EASYCOMP {
-
 int main(int argc, char** argv) {
     cout << "this might be used as a start for tests, or perhaps the cmake needs to be adjusted to produce a so/dll instead and each test compiled separately to use this" << endl;
     return 0;
 }
+
+namespace EASYCOMP {
 
 }
