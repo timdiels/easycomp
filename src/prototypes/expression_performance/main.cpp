@@ -32,8 +32,6 @@ using namespace std;
 #include "ooexpressions.h"
 #include "genericexpressions.h"
 
-int loop_times = 2000;
-
 ///////////////////////////////////////////////////////
 // OO expressions
 
@@ -70,11 +68,7 @@ double calc_expr(double a, double b) {
 }
 
 double _calc_expr(Expression* e) {
-    double sum = 0.0;
-    for (int i = 0; i<loop_times; i++) {
-        sum += e->value();
-    }
-    return sum;
+    return e->value();
 }
 
 }
@@ -116,11 +110,7 @@ double calc_expr(double a, double b) {
 
 template <class E>
 double _calc_expr(E* e) {
-    double sum = 0.0;
-    for (int i = 0; i<loop_times; i++) {
-        sum += e->value();
-    }
-    return sum;
+    return e->value();
 }
 
 }
@@ -129,18 +119,7 @@ double _calc_expr(E* e) {
 // plain C++ expression
 
 double calc_plain(double c314, double c2) {
-    double sum = 0.0;
-    for (double i=0; i<loop_times; i++) {
-        sum += ((c2 * c314) + (c314 + c2)) * c2;
-    }
-    return sum;
-}
-
-// the minimum amount of time to calc it (this is to check that calc_plain wasn't optimized much)
-double calc_clever(double c314, double c2) {
-    double sum = 0.0;
-    sum = loop_times * ((c2 * c314) + (c314 + c2)) * c2;
-    return sum;
+    return ((c2 * c314) + (c314 + c2)) * c2;
 }
 
 int main(int argc, char** argv) {
@@ -150,19 +129,15 @@ int main(int argc, char** argv) {
     double sum_oo_expr = OO::calc_expr(c314, c2);
     double sum_generic_expr = GENERIC::calc_expr(c314, c2);
     double sum_plain = calc_plain(c314, c2);
-    double sum_clever = calc_clever(c314, c2);
 
     if (sum_oo_expr != sum_generic_expr || sum_generic_expr != sum_plain) {
         cerr << sum_oo_expr << endl;
         cerr << sum_generic_expr << endl;
         cerr << sum_plain << endl;
-        cerr << sum_clever << endl;
         cerr << "wtf" << endl;
         cerr << "WRONG STUFF HAPPENED" << endl;
         return 1;
     }
-
-    cout << "cleverly computed sum: " << sum_clever << endl; // Just output this to make sure sum_clever is actually computed
 
     return 0;
 }
