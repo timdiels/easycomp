@@ -1,0 +1,8 @@
+#!/bin/bash
+rm callgrind.out*
+valgrind --tool=callgrind --instr-atstart=no --callgrind-out-file=callgrind.out ./$1 &
+callgrind_pid=$!
+sleep 10
+kill $callgrind_pid
+sleep 2
+qcachegrind callgrind.out &
