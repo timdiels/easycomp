@@ -20,7 +20,7 @@ target_link_libraries(easycomp
     ${LIBS} 
 )
 
-
+# TODO compiling prototypes along with the main thing is probably not desirable, should give them their own builddir, yet also with the favorite tools like ./cmake_ and ./callgrind
 file(GLOB_RECURSE Sources2 prototypes/expression_performance/*.cpp)
 add_executable(prototype_expression_performance ${Sources2})
 target_link_libraries(prototype_expression_performance
