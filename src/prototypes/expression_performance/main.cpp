@@ -20,7 +20,7 @@
 /**
  * This prototype measures overhead of expressions
  *
- * This prototype contains potentially dirty code, don't take it as an example
+ * This prototype contains dirty code, don't take it as an example
  * for good code.
  */
 
@@ -29,49 +29,20 @@
 
 using namespace std;
 
-class Expression
-{
-public:
-    virtual double value() = 0;
-    virtual void unused() {} // probably not needed, but wouldn't want to take the risk
-
-    Expression* a;
-    Expression* b;
-};
-
-// concrete classes
-class AddExpression : public Expression
-{
-public:
-    virtual double value() {
-        return a->value() + b->value();
-    }
-};
-
-class MultiplyExpression : public Expression
-{
-public:
-    virtual double value() {
-        return a->value() * b->value();
-    }
-};
-
-class ConstExpression : public Expression
-{
-public:
-    virtual double value() {
-        return val;
-    }
-
-    double val;
-};
+#include "ooexpressions.h"
+#include "genericexpressions.h"
 
 int loop_times = 2000;
 
-double _calc_expr(Expression* e, ConstExpression*, time_t* start_time, time_t* end_time);
+///////////////////////////////////////////////////////
+// OO expressions
 
-// calcs the same as calc_plain, but uses expressions
-double calc_expr(double a, double b, time_t* start_time, time_t* end_time) {
+namespace OO {
+
+double _calc_expr(Expression* e);
+
+// calcs the same as calc_plain, but uses oo expressions
+double calc_expr(double a, double b) {
     ConstExpression c314;
     c314.val = a;
 
@@ -95,30 +66,80 @@ double calc_expr(double a, double b, time_t* start_time, time_t* end_time) {
     a2.a = &c314;
     a2.b = &c2;
 
-    return _calc_expr(&m1, &c2, start_time, end_time);
+    return _calc_expr(&m1);
 }
 
-double _calc_expr(Expression* e, ConstExpression* c2, time_t* start_time, time_t* end_time) {
+double _calc_expr(Expression* e) {
     double sum = 0.0;
-
-    time(start_time);
-    for (c2->val = 0.2; c2->val<loop_times; c2->val++) {
+    for (int i = 0; i<loop_times; i++) {
         sum += e->value();
     }
-    time(end_time);
-
     return sum;
 }
 
-double calc_plain(double c314, double c2, time_t* start_time, time_t* end_time) {
+}
+
+///////////////////////////////////////////////////////
+// generic expressions
+
+namespace GENERIC {
+
+template <class E>
+double _calc_expr(E* e);
+
+// calcs the same as calc_plain, but uses generic expressions
+double calc_expr(double a, double b) {
+    ConstExpression c314;
+    c314.val = a;
+
+    ConstExpression c2;
+    c2.val = b;
+
+    // Note: yes these types are crazy, I wonder how much stress that puts on the compiler. We can use make_expression to not have to type these ourselves by, analog to what make_pair is to std::pair
+    MultiplyExpression<AddExpression<MultiplyExpression<ConstExpression, ConstExpression>, AddExpression<ConstExpression, ConstExpression>>, ConstExpression> m1;
+    MultiplyExpression<ConstExpression, ConstExpression> m2;
+    AddExpression<MultiplyExpression<ConstExpression, ConstExpression>, AddExpression<ConstExpression, ConstExpression>> a1;
+    AddExpression<ConstExpression, ConstExpression> a2;
+
+    // equivalent to m1(a1(m2(c2, c314), a2(c314, c2)), c2)
+    a2.a = c314;
+    a2.b = c2;
+    m2.a = c2;
+    m2.b = c314;
+    a1.a = m2;
+    a1.b = a2;
+    m1.a = a1;
+    m1.b = c2;
+
+    return _calc_expr(&m1);
+}
+
+template <class E>
+double _calc_expr(E* e) {
     double sum = 0.0;
-
-    time(start_time);
-    for (double i=0.2; i<loop_times; i++) {
-        sum += ((i * c314) + (c314 + i)) * i;
+    for (int i = 0; i<loop_times; i++) {
+        sum += e->value();
     }
-    time(end_time);
+    return sum;
+}
 
+}
+
+///////////////////////////////////////////////////////
+// plain C++ expression
+
+double calc_plain(double c314, double c2) {
+    double sum = 0.0;
+    for (double i=0; i<loop_times; i++) {
+        sum += ((c2 * c314) + (c314 + c2)) * c2;
+    }
+    return sum;
+}
+
+// the minimum amount of time to calc it (this is to check that calc_plain wasn't optimized much)
+double calc_clever(double c314, double c2) {
+    double sum = 0.0;
+    sum = loop_times * ((c2 * c314) + (c314 + c2)) * c2;
     return sum;
 }
 
@@ -126,27 +147,22 @@ int main(int argc, char** argv) {
     double c314 = 3.14;
     double c2 = 2.0;
 
-    time_t start_time;
-    time_t end_time;
-    double sum_expr = calc_expr(c314, c2, &start_time, &end_time);
+    double sum_oo_expr = OO::calc_expr(c314, c2);
+    double sum_generic_expr = GENERIC::calc_expr(c314, c2);
+    double sum_plain = calc_plain(c314, c2);
+    double sum_clever = calc_clever(c314, c2);
 
-    time_t start_time2;
-    time_t end_time2;
-    double sum_plain = calc_plain(c314, c2, &start_time2, &end_time2);
-
-
-    if (sum_expr != sum_plain) {
+    if (sum_oo_expr != sum_generic_expr || sum_generic_expr != sum_plain) {
+        cerr << sum_oo_expr << endl;
+        cerr << sum_generic_expr << endl;
+        cerr << sum_plain << endl;
+        cerr << sum_clever << endl;
         cerr << "wtf" << endl;
+        cerr << "WRONG STUFF HAPPENED" << endl;
         return 1;
     }
 
-    time_t expr_time = end_time - start_time;
-    time_t plain_time = end_time2 - start_time2;
-    time_t overhead_time = expr_time - plain_time;
-    cout << "Time with expressions: " << expr_time << endl
-        << "Time with plain calc: " << plain_time << endl
-        << "Overhead time: " << overhead_time << endl
-        << "Overhead: " << overhead_time / (double) plain_time  * 100.0 << "%" << endl;
+    cout << "cleverly computed sum: " << sum_clever << endl; // Just output this to make sure sum_clever is actually computed
 
     return 0;
 }
